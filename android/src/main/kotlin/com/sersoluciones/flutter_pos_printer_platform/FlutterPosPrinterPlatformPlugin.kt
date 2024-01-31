@@ -204,6 +204,7 @@ class FlutterPosPrinterPlatformPlugin : FlutterPlugin, MethodCallHandler, Plugin
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+        bluetoothService = BluetoothService.getInstance(bluetoothHandler)
         isScan = false
         when {
             call.method.equals("getBluetoothList") -> {
