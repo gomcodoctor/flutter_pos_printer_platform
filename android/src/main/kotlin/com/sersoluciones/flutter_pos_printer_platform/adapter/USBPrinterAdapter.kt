@@ -25,17 +25,18 @@ class USBPrinterAdapter private constructor() {
     private var mEndPoint: UsbEndpoint? = null
 
     fun init(reactContext: Context?) {
+        Log.v(LOG_TAG, "printing adaptor is init")
         mContext = reactContext
         mUSBManager = mContext!!.getSystemService(Context.USB_SERVICE) as UsbManager
         mPermissionIndent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         } else {
             PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), 0)
         }
         val filter = IntentFilter(ACTION_USB_PERMISSION)
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         mContext!!.registerReceiver(mUsbDeviceReceiver, filter)
-        Log.v(LOG_TAG, "ESC/POS Printer initialized")
+        Log.v(LOG_TAG, "ESC/POS Printer adaptor initialized")
     }
 
 
@@ -44,7 +45,20 @@ class USBPrinterAdapter private constructor() {
             val action = intent.action
             if ((ACTION_USB_PERMISSION == action)) {
                 synchronized(this) {
-                    val usbDevice: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                    val usbDevice: UsbDevice? = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                    } else {
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                    }
+
+                    if (usbDevice != null) Log.v(
+                        LOG_TAG,
+                        "usbDevice adaptor mUsbDeviceReceiver for device: vendor_id: " + usbDevice.vendorId + ", product_id: " + usbDevice.productId
+                    )
+                    else {
+                        Log.v(LOG_TAG, "printing adaptor usbDevice is null")
+                    }
+
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         Log.i(
                             LOG_TAG,
@@ -89,6 +103,7 @@ class USBPrinterAdapter private constructor() {
 
     fun selectDevice(vendorId: Int, productId: Int): Boolean {
         if ((mUsbDevice == null) || (mUsbDevice!!.vendorId != vendorId) || (mUsbDevice!!.productId != productId)) {
+            Log.v(LOG_TAG, "selectDevice adaptor usbDevice is null")
             synchronized(printLock) {
                 closeConnectionIfExists()
                 val usbDevices: List<UsbDevice> = deviceList
