@@ -32,39 +32,11 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
-            if ((ACTION_USB_PERMISSION == action)) {
-                synchronized(this) {
-                    Log.v(LOG_TAG, "printing service is BroadcastReceiver")
 
-                    val usbDevice: UsbDevice? = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-                    } else {
-                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
-                    }
+            if(action != null ) Log.v(LOG_TAG, action)
+            else Log.v(LOG_TAG, "action is null")
 
-                    if (usbDevice != null) Log.v(
-                        LOG_TAG,
-                        "usbDevice for device: vendor_id: " + usbDevice.vendorId + ", product_id: " + usbDevice.productId
-                    )
-                    else {
-                        Log.v(LOG_TAG, "usbDevice is null")
-                    }
-
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        Log.i(
-                            LOG_TAG,
-                            "Success get permission for device ${usbDevice?.deviceId}, vendor_id: ${usbDevice?.vendorId} product_id: ${usbDevice?.productId}"
-                        )
-                        mUsbDevice = usbDevice
-                        state = STATE_USB_CONNECTED
-                        mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
-                    } else {
-                        Toast.makeText(context, mContext?.getString(R.string.user_refuse_perm) + ": ${usbDevice?.deviceName}", Toast.LENGTH_LONG).show()
-                        state = STATE_USB_NONE
-                        mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
-                    }
-                }
-            } else if ((UsbManager.ACTION_USB_DEVICE_DETACHED == action)) {
+            if ((UsbManager.ACTION_USB_DEVICE_DETACHED == action)) {
 
                 if (mUsbDevice != null) {
                     Toast.makeText(context, mContext?.getString(R.string.device_off), Toast.LENGTH_LONG).show()
@@ -74,10 +46,25 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                 }
 
             } else if ((UsbManager.ACTION_USB_DEVICE_ATTACHED == action)) {
-//                if (mUsbDevice != null) {
-//                    Toast.makeText(context, "USB device has been turned off", Toast.LENGTH_LONG).show()
-//                    closeConnectionIfExists()
-//                }
+                synchronized(this){
+                    val usbDevice: UsbDevice? = if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                    } else {
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                    }
+
+                    if (usbDevice != null) {
+                        Log.v(
+                            LOG_TAG,
+                            "usbDevice dd for device: vendor_id: " + usbDevice.vendorId + ", product_id: " + usbDevice.productId
+                        )
+                        mUSBManager?.requestPermission(usbDevice, mPermissionIndent)
+                    }
+                    else {
+                        Log.v(LOG_TAG, "usbDevice dd is null")
+                    }
+                }
+
             }
         }
     }
@@ -87,14 +74,15 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         mContext = reactContext
         mUSBManager = mContext!!.getSystemService(Context.USB_SERVICE) as UsbManager
         mPermissionIndent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         } else {
             PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), 0)
         }
         val filter = IntentFilter(ACTION_USB_PERMISSION)
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
-        mContext!!.registerReceiver(mUsbDeviceReceiver, filter)
-        Log.v(LOG_TAG, "ESC/POS printing service Printer initialized")
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+        mContext!!.registerReceiver(mUsbDeviceReceiver, filter, Context.RECEIVER_EXPORTED)
+        Log.v(LOG_TAG, "ESC/POS printing service Printer updated initialized")
     }
 
     fun closeConnectionIfExists() {
@@ -118,7 +106,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         }
 
     fun selectDevice(vendorId: Int, productId: Int): Boolean {
-//        Log.v(LOG_TAG, " status usb ______ $state")
+        Log.v(LOG_TAG, " status usb ______ $state")
         if ((mUsbDevice == null) || (mUsbDevice!!.vendorId != vendorId) || (mUsbDevice!!.productId != productId)) {
             Log.v(LOG_TAG, "mUsbDevice printing service is null")
             synchronized(printLock) {
@@ -128,7 +116,14 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                     if ((usbDevice.vendorId == vendorId) && (usbDevice.productId == productId)) {
                         Log.v(LOG_TAG, "Request for device: vendor_id: " + usbDevice.vendorId + ", product_id: " + usbDevice.productId)
                         closeConnectionIfExists()
-                        mUSBManager!!.requestPermission(usbDevice, mPermissionIndent)
+                        if(mUSBManager!!.hasPermission(usbDevice)){
+                            Log.v(LOG_TAG, "permission allowed: " + usbDevice.productId)
+                            mUsbDevice = usbDevice
+                        }
+                        else {
+                            Log.v(LOG_TAG, "no permission allowed: " + usbDevice.productId)
+                            mUSBManager!!.requestPermission(usbDevice, mPermissionIndent)
+                        }
                         state = STATE_USB_CONNECTING
                         mHandler?.obtainMessage(STATE_USB_CONNECTING)?.sendToTarget()
                         return true
