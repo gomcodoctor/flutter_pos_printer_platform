@@ -217,7 +217,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         }
     }
 
-    fun printBytes(bytes: ArrayList<Int>): Boolean {
+    fun printBytes(bytes: ByteArray): Boolean {
         Log.v(LOG_TAG, "Printing bytes")
         val isConnected = openConnection()
         if (isConnected) {
@@ -226,33 +226,35 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             Log.v(LOG_TAG, "Connected to device")
             Thread {
                 synchronized(printLock) {
-                    val vectorData: Vector<Byte> = Vector()
-                    for (i in bytes.indices) {
-                        val `val`: Int = bytes[i]
-                        vectorData.add(`val`.toByte())
-                    }
-                    val temp: Array<Any> = vectorData.toTypedArray()
-                    val byteData = ByteArray(temp.size)
-                    for (i in temp.indices) {
-                        byteData[i] = temp[i] as Byte
-                    }
                     var b = 0
-                    if (mUsbDeviceConnection != null) {
-                        if (byteData.size > chunkSize) {
-                            var chunks: Int = byteData.size / chunkSize
-                            if (byteData.size % chunkSize > 0) {
-                                ++chunks
-                            }
-                            for (i in 0 until chunks) {
-//                                val buffer: ByteArray = byteData.copyOfRange(i * chunkSize, chunkSize + i * chunkSize)
-                                val buffer: ByteArray = Arrays.copyOfRange(byteData, i * chunkSize, chunkSize + i * chunkSize)
-                                b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, buffer, chunkSize, 100000)
-                            }
-                        } else {
-                            b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, byteData, byteData.size, 100000)
-                        }
-                        Log.i(LOG_TAG, "Return code: $b")
-                    }
+                    b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, bytes, bytes.size, 100000)
+//                    val vectorData: Vector<Byte> = Vector()
+//                    for (i in bytes.indices) {
+//                        val `val`: Int = bytes[i]
+//                        vectorData.add(`val`.toByte())
+//                    }
+//                    val temp: Array<Any> = vectorData.toTypedArray()
+//                    val byteData = ByteArray(temp.size)
+//                    for (i in temp.indices) {
+//                        byteData[i] = temp[i] as Byte
+//                    }
+//                    var b = 0
+//                    if (mUsbDeviceConnection != null) {
+//                        if (byteData.size > chunkSize) {
+//                            var chunks: Int = byteData.size / chunkSize
+//                            if (byteData.size % chunkSize > 0) {
+//                                ++chunks
+//                            }
+//                            for (i in 0 until chunks) {
+////                                val buffer: ByteArray = byteData.copyOfRange(i * chunkSize, chunkSize + i * chunkSize)
+//                                val buffer: ByteArray = Arrays.copyOfRange(byteData, i * chunkSize, chunkSize + i * chunkSize)
+//                                b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, buffer, chunkSize, 100000)
+//                            }
+//                        } else {
+//                            b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, byteData, byteData.size, 100000)
+//                        }
+                    Log.i(LOG_TAG, "Return code: $b")
+//                    }
                 }
             }.start()
             return true
