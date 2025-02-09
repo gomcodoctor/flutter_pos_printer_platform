@@ -19,18 +19,17 @@ import androidx.core.app.ActivityCompat.startActivityForResult
 import com.sersoluciones.flutter_pos_printer_platform.bluetooth.BluetoothConnection
 import com.sersoluciones.flutter_pos_printer_platform.bluetooth.BluetoothConstants
 import com.sersoluciones.flutter_pos_printer_platform.bluetooth.BluetoothService
-import com.sersoluciones.flutter_pos_printer_platform.bluetooth.BluetoothService.Companion.TAG
 import com.sersoluciones.flutter_pos_printer_platform.usb.USBPrinterService
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
-import io.flutter.plugin.common.BinaryMessenger
 
 /** FlutterPosPrinterPlatformPlugin */
 class FlutterPosPrinterPlatformPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.RequestPermissionsResultListener,
