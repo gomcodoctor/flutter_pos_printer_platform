@@ -201,11 +201,11 @@ class BluetoothConnection constructor(handler: Handler) : IBluetoothConnection {
      */
     private fun connectionLost() {
         // Send a failure message back to the Activity
-        val msg = mHandler.obtainMessage(BluetoothConstants.MESSAGE_TOAST)
-        val bundle = Bundle()
-        bundle.putInt(TOAST, R.string.lost_connection_bt)
-        msg.data = bundle
-        mHandler.sendMessage(msg)
+//        val msg = mHandler.obtainMessage(BluetoothConstants.MESSAGE_TOAST)
+//        val bundle = Bundle()
+//        bundle.putInt(TOAST, R.string.lost_connection_bt)
+//        msg.data = bundle
+//        mHandler.sendMessage(msg)
         state = BluetoothConstants.STATE_NONE
     }
 
