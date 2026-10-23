@@ -141,7 +141,7 @@ class FlutterPosPrinterPlatformPlugin : FlutterPlugin, MethodCallHandler, Plugin
                 BluetoothConstants.MESSAGE_TOAST -> {
                     val bundle = msg.data
                     bundle?.getInt(BluetoothConnection.TOAST)?.let {
-                        Toast.makeText(context, context!!.getString(it), Toast.LENGTH_SHORT).show()
+                        SafeToast.show(context, context?.getString(it), Toast.LENGTH_SHORT)
                     }
                 }
                 BluetoothConstants.MESSAGE_START_SCANNING -> {
@@ -474,7 +474,7 @@ class FlutterPosPrinterPlatformPlugin : FlutterPlugin, MethodCallHandler, Plugin
 
                 }
                 if (!grant) {
-                    Toast.makeText(context, R.string.not_permissions, Toast.LENGTH_LONG).show()
+                    SafeToast.show(context, R.string.not_permissions, Toast.LENGTH_LONG)
                 } else {
                     if (verifyIsBluetoothIsOn() && isScan)
                         if (isBle) bluetoothService.scanBleDevice(channel!!) else bluetoothService.scanBluDevice(channel!!)
